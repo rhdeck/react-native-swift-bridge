@@ -1,6 +1,7 @@
 const fs = require("fs");
 const Path = require("path");
 const glob = require("glob");
+const xcode = require("xcode");
 function getRootIOSPath(initialPath) {
   if (!initialPath) initialPath = process.cwd();
   else initialPath = Path.resolve(process.cwd(), initialPath);
@@ -322,15 +323,39 @@ function writeIf(outfile, text) {
     const oldText = fs.readFileSync(outfile, "utf8");
     if (oldText == text) {
       return false;
+    } else {
+      fs.unlinkSync(outfile);
     }
   }
   const result = fs.writeFileSync(outfile, text);
   if (!result) console.log("Could not write file", outfile);
   return true;
 }
+function getProjectPath(path) {
+  if (!path) path = process.cwd();
+  const iosPath = getRootIOSPath(path);
+  const globs = glob.sync(
+    Path.join(iosPath, "**", "*xcodeproj", "project.pbxproj")
+  );
+  if (!globs || !globs.length) return false;
+  return globs[0];
+}
+function addModuleToPBXProj(outfile, iosPath) {
+  const projpath = getProjectPath(iosPath);
+  if (!projpath) return false;
+  const project = xcode.project(projpath);
+  project.parseSync();
+  //Find my file - outfile!
+  const basename = Path.basename(outfile);
+  project.addSourceFileNew(basename);
+
+  const out = project.writeSync();
+  fs.writeFileSync(projpath, out);
+}
 
 module.exports = {
   getBridgingModuleTextFromPath,
   getRootIOSPath,
-  writeIf
+  writeIf,
+  addModuleToPBXProj
 };
