@@ -19,15 +19,24 @@ if (fs.existsSync(outfile) && fs.lstatSync(outfile).isDirectory()) {
   outfile = Path.join(outfile, "rn-swift-bridge.m");
 }
 if (commander.watch) {
-  console.log("Watching for swift changes on " + thisPath);
-  watch(thisPath, { recursive: true, filter: /\.swift$/ }, () => {
-    const text = core.getBridgingModuleTextFromPath(thisPath);
-    console.log("Detected change");
-    if (core.writeIf(outfile, text)) console.log("Updated " + outfile);
-  });
+  try {
+    console.log("Watching for swift changes on " + thisPath);
+    watch(thisPath, { recursive: true, filter: /\.swift$/ }, () => {
+      const text = core.getBridgingModuleTextFromPath(thisPath);
+      console.log("Detected change");
+      if (core.writeIf(outfile, text)) console.log("Updated " + outfile);
+    });
+  } catch (e) {
+    console.log("Hit error ", e);
+  }
 } else {
-  const text = core.getBridgingModuleTextFromPath(thisPath);
-  if (core.writeIf(outfile, text))
-    console.log("Successfully wrote to ", outfile);
-  else console.log("No changes to ", outfile);
+  try {
+    const text = core.getBridgingModuleTextFromPath(thisPath);
+    if (core.writeIf(outfile, text)) {
+      core.addModuleToPBXProj(outfile, thisPath);
+      console.log("Successfully wrote to ", outfile);
+    } else console.log("No changes to ", outfile);
+  } catch (e) {
+    console.log("Hit error ", e);
+  }
 }
