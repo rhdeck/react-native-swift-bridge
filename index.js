@@ -262,21 +262,26 @@ function processLine(v) {
       break;
     case "var":
       //Check for a type
+      console.log(v);
       const colonPos = rest.indexOf(":");
       const eqPos = rest.indexOf(":");
       if (colonPos > -1 && (eqPos > -1 || colonPos > eqPos)) {
         const name = rest.substr(0, colonPos).trim();
+        if (v.type) {
+          info = { name: name, type: getOCType(v.type) };
+          break;
+        }
         //The word following the colon is the type
         var afterColon = rest.substr(colonPos + 1, rest.length);
         if (afterColon.indexOf("{") > -1)
           afterColon = afterColon.substr(0, afterColon.indexOf("{"));
         const eqPos2 = afterColon.indexOf("=");
         if (eqPos2 > -1) {
-          const type = afterColon.substr(0, eqPos2).trim();
+          const type = getOCType(afterColon.substr(0, eqPos2).trim());
           info = { name: name, type: type };
           break;
         } else {
-          const type = afterColon.trim();
+          const type = getOCType(afterColon.trim());
           info = { name: name, type: type };
           break;
         }
@@ -288,6 +293,8 @@ function processLine(v) {
   return v;
 }
 function getOCType(type) {
+  if (type.substr(-1) == "?") type = type.substr(0, type.length - 1);
+  console.log("Working with type", type);
   switch (type) {
     case "Int":
     case "Int32":
@@ -295,10 +302,15 @@ function getOCType(type) {
     case "Float":
     case "Double":
       return "NSNumber *";
+    case "NSInteger":
+      return type;
     case "String":
       return "NSString *";
     case "jsonType":
       return "NSDictionary *";
+    case "Bool":
+      console.log("I got to a boo type!!!");
+      return "BOOL";
     default:
       //Try some new techniques
       if (type.indexOf("[") === 0) {
@@ -307,6 +319,11 @@ function getOCType(type) {
         } else {
           return "NSArray *";
         }
+      }
+      if (type.indexOf("Block") > -1) {
+        return type;
+      } else {
+        return type + " *";
       }
   }
   return type;
