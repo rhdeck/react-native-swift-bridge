@@ -145,7 +145,7 @@ function processFile(filePath) {
       if (x > 0) obj.before = lines[x - 1];
       if (x < lines.length - 1) obj.after = lines[x + 1];
       var l = processLine(obj);
-      if (l) foundLines.push(processLine(obj));
+      if (l) foundLines.push(l);
     }
   }
   //Reprocess lines into classes
@@ -262,7 +262,6 @@ function processLine(v) {
       break;
     case "var":
       //Check for a type
-      console.log(v);
       const colonPos = rest.indexOf(":");
       const eqPos = rest.indexOf(":");
       if (colonPos > -1 && (eqPos > -1 || colonPos > eqPos)) {
@@ -294,7 +293,6 @@ function processLine(v) {
 }
 function getOCType(type) {
   if (type.substr(-1) == "?") type = type.substr(0, type.length - 1);
-  console.log("Working with type", type);
   switch (type) {
     case "Int":
     case "Int32":
@@ -309,7 +307,6 @@ function getOCType(type) {
     case "jsonType":
       return "NSDictionary *";
     case "Bool":
-      console.log("I got to a boo type!!!");
       return "BOOL";
     default:
       //Try some new techniques
