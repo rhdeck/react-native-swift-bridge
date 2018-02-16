@@ -293,7 +293,10 @@ function processLine(v) {
   return v;
 }
 function getOCType(type) {
+  type = type.trim();
   if (type.substr(-1) == "?") type = type.substr(0, type.length - 1);
+  if (type.indexOf("@") === 0)
+    type = type.substr(type.indexOf(" ") + 1, type.length - 1);
   switch (type) {
     case "Int":
     case "Int32":
