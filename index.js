@@ -77,6 +77,7 @@ function getBridgingModuleTextFromPath(initialPath) {
         const m = obj.methods[methodName];
         if (m.args) {
           m.args.forEach(arg => {
+            if (!arg) return;
             var name = arg.name;
             var type = arg.type;
             var isDefault = arg.isDefault;
