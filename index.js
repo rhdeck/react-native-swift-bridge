@@ -204,8 +204,13 @@ function processLine(v) {
   }
   switch (type) {
     case "":
-      //This could be because I have a class in the next line. Check it out?
-      if (v.after && v.after.indexOf("class") > -1) {
+      //This could be  because I have a class in the next line. Check it out?
+      if (
+        v.after &&
+        (v.after.indexOf("class") > -1 ||
+          v.after.indexOf("func") > -1 ||
+          v.after.indexOf("var") > -1)
+      ) {
         v.objcname = t.substr(1, t.length - 2);
         v.text = v.after;
         delete v.after;
