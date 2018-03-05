@@ -12,15 +12,18 @@ function getRootIOSPath(initialPath) {
 function getBridgingModuleTextFromPath(initialPath) {
   const newdir = getRootIOSPath(initialPath);
   const out = processDir(newdir);
+  if (!out) return false;
   //Convert file output to class-based output independent of files
   var classes = {};
   Object.keys(out).forEach(path => {
     const cls = out[path];
+    if (!cls) return;
     Object.keys(cls).forEach(cl => {
       const obj = cls[cl];
       classes[cl] = obj;
     });
   });
+  if (!classes) return false;
   //Distill processed classes
   var processedClasses = {};
   Object.keys(classes).forEach(classname => {
@@ -93,13 +96,15 @@ function getBridgingModuleTextFromPath(initialPath) {
     }
     if (useViewManager && obj.view) {
       const ps = getProperties(obj.view, processedClasses);
-      Object.keys(ps).forEach(propertyName => {
-        const p = ps[propertyName];
-        const type = p.type;
-        const txt =
-          "RCT_EXPORT_VIEW_PROPERTY(" + propertyName + ", " + type + ");";
-        outlines.push(txt);
-      });
+      if (ps) {
+        Object.keys(ps).forEach(propertyName => {
+          const p = ps[propertyName];
+          const type = p.type;
+          const txt =
+            "RCT_EXPORT_VIEW_PROPERTY(" + propertyName + ", " + type + ");";
+          outlines.push(txt);
+        });
+      }
     }
     outlines.push("@end");
   });
@@ -317,6 +322,8 @@ function getOCType(type) {
       return "NSDictionary *";
     case "Bool":
       return "BOOL";
+    case "URL":
+      return "NSURL *";
     default:
       //Try some new techniques
       if (type.indexOf("[") === 0) {
