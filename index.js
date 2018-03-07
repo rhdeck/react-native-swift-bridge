@@ -311,9 +311,12 @@ function getOCType(type) {
     case "Int":
     case "Int32":
     case "Integer":
+      return "NSInteger";
     case "Float":
+      return "float";
     case "Double":
-      return "NSNumber *";
+      return "double";
+    // return "NSNumber *";
     case "NSInteger":
       return type;
     case "String":
