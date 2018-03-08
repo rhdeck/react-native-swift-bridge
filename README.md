@@ -22,17 +22,20 @@ rnsb --watch
 
 # Tips
 
-1. The utility does not support `@objcmembers` yet so you need to indicate which classes, methods and properties to expose via individual `@objc` tags
-2. When working with types it cannot identify (e.g. enums that are implicitly ints) it needs a little help on a prior line: add a line comment like so:
+1.  The utility does not support `@objcmembers` yet so you need to indicate which classes, methods and properties to expose via individual `@objc` tags
+2.  When working with types it cannot identify (e.g. enums that are implicitly ints) it needs a little help on a prior line: add a line comment like so:
 
 ```
 //@rn type=NSInteger
 @objc var worldAlignment:ARConfiguration.WorldAlignment {
 ```
 
-3. When working with a viewmanager, give an `@rn` hint of the class that will contain the view:
+3.  When working with RCTViewManager, it will auto-detect the name of the view you are managing using the same RN heuristic - the view is the name of the manager minus the word "Manager". So "RHDViewManager" manages "RHDView". However, if your naming conventions do not match to this, you can tell the bridge the name of the view to manage exposing view props.
 
-```
+```swift
 // @rn view=RHDARView
 @objc(RHDARViewManager)
+class RHDARViewManager: RCTViewManager {
+    /*...*/
+}
 ```

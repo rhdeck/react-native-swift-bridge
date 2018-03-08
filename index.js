@@ -34,6 +34,13 @@ function getBridgingModuleTextFromPath(initialPath) {
       subclasses: obj.subclasses
     };
     if (obj.view) p.view = obj.view;
+    if (
+      p.subclasses.indexOf("RCTViewManager") > -1 &&
+      !p.view &&
+      classname.endsWith("Manager")
+    ) {
+      p.view = classname.substring(0, classname.length - 7);
+    }
     obj.lines.forEach(line => {
       switch (line.type) {
         case "func":
