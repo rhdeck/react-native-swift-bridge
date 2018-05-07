@@ -186,8 +186,13 @@ function processLine(v) {
   if (v.text.indexOf("@objc") > -1) {
     var t = v.text.split("@objc")[1].trim();
   }
-  const firstspace = t.indexOf(" ");
-  const type = t.substr(0, firstspace);
+  var firstspace = t.indexOf(" ");
+  var type = t.substr(0, firstspace);
+  if (["public", "private", "open"].indexOf(type) != -1) {
+    const nextspace = t.indexOf(" ", firstspace + 1);
+    type = t.substr(firstspace, nextspace - firstspace).trim();
+    firstspace = nextspace;
+  }
   if (t.indexOf("class func") > -1) {
     //Here's a tricky thing - special exception for class functions, that should never be exported
     return null;
