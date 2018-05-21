@@ -406,7 +406,7 @@ function addModuleToPBXProj(outfile, iosPath) {
 }
 function getJSFromPath(thisPath) {
   const classes = getClassesFromPath(thisPath);
-  var outlines = ['import { NativeModule } from "react-native"'];
+  var outlines = ['import { NativeModules } from "react-native"'];
   var exportables = [];
   Object.keys(classes).forEach(k => {
     const obj = classes[k];
@@ -417,6 +417,13 @@ function getJSFromPath(thisPath) {
       Object.keys(obj.methods).forEach(m => {
         const mobj = obj.methods[m];
         const JSm = exportables.indexOf(m) > -1 ? k + m : m;
+        const async =
+          mobj.args.filter(arg => {
+            return arg.type == "RCTPromiseResolveBlock";
+          }).length > 0
+            ? "async "
+            : "";
+            const await = async ? "await " : ""
         const filteredKeys = mobj.args
           .filter(arg => {
             return (
@@ -431,9 +438,11 @@ function getJSFromPath(thisPath) {
         var line =
           "const " +
           JSm +
-          " = async (" +
+          " = " +
+          async +
+          "(" +
           filteredKeys.join(", ") +
-          ") => {\n  return await " +
+          ") => {\n  return "+ await +
           NativeObj +
           "." +
           m +
