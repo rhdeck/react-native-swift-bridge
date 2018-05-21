@@ -22,6 +22,7 @@
   "bin": {
     "react-native-swift-bridge": "cli.js",
     "rnsb": "cli.js",
-    "rnsb-watch": "watch.js"
+    "rnsb-watch": "watch.js",
+    "rnsb-js": "extractJS.js"
   }
 }

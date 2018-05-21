@@ -10,6 +10,9 @@ function getRootIOSPath(initialPath) {
   return Path.dirname(globs[0]);
 }
 function getBridgingModuleTextFromPath(initialPath) {
+  return getBridgingModuleTextFromClasses(getClassesFromPath(initialPath));
+}
+function getClassesFromPath(initialPath) {
   const newdir = getRootIOSPath(initialPath);
   const out = processDir(newdir);
   if (!out) return false;
@@ -54,6 +57,9 @@ function getBridgingModuleTextFromPath(initialPath) {
     });
     processedClasses[classname] = p;
   });
+  return processedClasses;
+}
+function getBridgingModuleTextFromClasses(processedClasses) {
   usedEmitter = false;
   usedViewManager = false;
   outlines = ["#import <React/RCTBridgeModule.h>"];
@@ -397,10 +403,57 @@ function addModuleToPBXProj(outfile, iosPath) {
   const out = project.writeSync();
   fs.writeFileSync(projpath, out);
 }
-
+function getJSFromPath(thisPath) {
+  const classes = getClassesFromPath(thisPath);
+  var outlines = ['import { NativeModule } from "react-native"'];
+  var exportables = [];
+  Object.keys(classes).forEach(k => {
+    const obj = classes[k];
+    const NativeObj = "Native" + k;
+    if (obj.methods) {
+      outlines.push("// Starting code for object " + k);
+      outlines.push("const " + NativeObj + "= NativeModules." + k);
+      Object.keys(obj.methods).forEach(m => {
+        const mobj = obj.methods[m];
+        const JSm = exportables.indexOf(m) > -1 ? k + m : m;
+        const filteredKeys = mobj.args
+          .filter(arg => {
+            return (
+              ["RCTPromiseRejectBlock", "RCTPromiseResolveBlock"].indexOf(
+                arg.type
+              ) == -1
+            );
+          })
+          .map(arg => {
+            return arg.name;
+          });
+        var line =
+          "const " +
+          JSm +
+          " = async (" +
+          filteredKeys.join(", ") +
+          ") => {\n  return await " +
+          NativeObj +
+          "." +
+          m +
+          "(" +
+          filteredKeys.join(", ") +
+          ");\n}";
+        outlines.push(line);
+        exportables.push(JSm);
+      });
+    }
+  });
+  outlines.push("export {\n  " + exportables.join(",\n  ") + "\n}");
+  const out = outlines.join(";\n");
+  return out;
+}
 module.exports = {
   getBridgingModuleTextFromPath,
+  getBridgingModuleTextFromClasses,
+  getClassesFromPath,
   getRootIOSPath,
   writeIf,
-  addModuleToPBXProj
+  addModuleToPBXProj,
+  getJSFromPath
 };

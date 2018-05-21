@@ -4,7 +4,7 @@ const commander = require("commander");
 const fs = require("fs");
 const watch = require("node-watch");
 const Path = require("path");
-
+const cp = require("child_process");
 commander.usage("[options] [targetpath]");
 commander.option("-o --out <outfile>");
 commander.option("-w --watch");
@@ -13,6 +13,8 @@ var thisPath = commander.args[0];
 if (!thisPath || !thisPath.length) {
   thisPath = process.cwd();
 }
+var jsfile = commander.js;
+if (!jsfile) jsfile = Path.join(thisPath, "RNSwiftBridge.js");
 var outfile = commander.out;
 if (!outfile) outfile = core.getRootIOSPath(thisPath);
 if (fs.existsSync(outfile) && fs.lstatSync(outfile).isDirectory()) {
@@ -24,7 +26,12 @@ if (commander.watch) {
     watch(thisPath, { recursive: true, filter: /\.swift$/ }, () => {
       const text = core.getBridgingModuleTextFromPath(thisPath);
       console.log("Detected change");
-      if (core.writeIf(outfile, text)) console.log("Updated " + outfile);
+      if (core.writeIf(outfile, text)) {
+        console.log("Updated " + outfile);
+        if (core.writeIf(jsFile, core.getJSFromPath(thisPath))) {
+          console.log("Updated " + jsFile);
+        }
+      }
     });
   } catch (e) {
     console.log("Hit error ", e);
