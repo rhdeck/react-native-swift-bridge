@@ -9,12 +9,10 @@ commander.usage("[options] [targetpath]");
 commander.option("-o --out <outfile>");
 commander.option("-w --watch");
 commander.parse(process.argv);
-var thisPath = commander.args[0];
-if (!thisPath || !thisPath.length) {
-  thisPath = process.cwd();
-}
-var jsfile = commander.js;
-if (!jsfile) jsfile = Path.join(thisPath, "RNSwiftBridge.js");
+var thisPath = commander.args[0] ? commander.args[0] : process.cwd();
+var jsFile = commander.js
+  ? commander.js
+  : Path.join(thisPath, "RNSwiftBridge.js");
 var outfile = commander.out;
 if (!outfile) outfile = core.getRootIOSPath(thisPath);
 if (fs.existsSync(outfile) && fs.lstatSync(outfile).isDirectory()) {
@@ -41,8 +39,11 @@ if (commander.watch) {
     const text = core.getBridgingModuleTextFromPath(thisPath);
     if (core.writeIf(outfile, text)) {
       core.addModuleToPBXProj(outfile, thisPath);
-      console.log("Successfully wrote to ", outfile);
     } else console.log("No changes to ", outfile);
+    console.log("Updated " + outfile);
+    if (core.writeIf(jsFile, core.getJSFromPath(thisPath))) {
+      console.log("Updated " + jsFile);
+    }
   } catch (e) {
     console.log("Hit error ", e);
   }
