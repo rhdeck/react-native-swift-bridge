@@ -17,6 +17,7 @@
     "commander": "^2.14.0",
     "glob": "^7.1.2",
     "node-watch": "^0.5.6",
+    "prettier": "^1.12.1",
     "xcode": "rhdeck/cordova-node-xcode"
   },
   "bin": {
