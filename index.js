@@ -2,6 +2,7 @@ const fs = require("fs");
 const Path = require("path");
 const glob = require("glob");
 const xcode = require("xcode");
+const prettier = require("prettier");
 function getRootIOSPath(initialPath) {
   if (!initialPath) initialPath = process.cwd();
   else initialPath = Path.resolve(process.cwd(), initialPath);
@@ -379,7 +380,7 @@ function writeIf(outfile, text) {
     }
   }
   const result = fs.writeFileSync(outfile, text);
-  if (!result) console.log("Could not write file", outfile);
+  if (result) console.log("Could not write file", outfile);
   return true;
 }
 function getProjectPath(path) {
@@ -411,7 +412,7 @@ function getJSFromPath(thisPath) {
     const obj = classes[k];
     const NativeObj = "Native" + k;
     if (obj.methods) {
-      outlines.push("// Starting code for object " + k);
+      outlines.push("//#region Code for object " + k);
       outlines.push("const " + NativeObj + "= NativeModules." + k);
       Object.keys(obj.methods).forEach(m => {
         const mobj = obj.methods[m];
@@ -442,10 +443,14 @@ function getJSFromPath(thisPath) {
         outlines.push(line);
         exportables.push(JSm);
       });
+      outlines.push("//#endregion");
     }
   });
+  outlines.push("//#region Exports");
   outlines.push("export {\n  " + exportables.join(",\n  ") + "\n}");
-  const out = outlines.join(";\n");
+  outlines.push("//#endregion");
+  const out = prettier.format(outlines.join("\n"));
+
   return out;
 }
 module.exports = {
