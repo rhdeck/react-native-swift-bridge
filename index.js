@@ -419,21 +419,22 @@ function getJSFromPath(thisPath) {
         const JSm = exportables.indexOf(m) > -1 ? k + m : m;
         const async =
           mobj.args.filter(arg => {
-            return arg.type == "RCTPromiseResolveBlock";
+            return arg && arg.type == "RCTPromiseResolveBlock";
           }).length > 0
             ? "async "
             : "";
-            const await = async ? "await " : ""
+        const isAwait = async ? "await " : "";
         const filteredKeys = mobj.args
           .filter(arg => {
             return (
+              !arg ||
               ["RCTPromiseRejectBlock", "RCTPromiseResolveBlock"].indexOf(
                 arg.type
               ) == -1
             );
           })
           .map(arg => {
-            return arg.name;
+            return arg ? arg.name : null;
           });
         var line =
           "const " +
@@ -442,7 +443,8 @@ function getJSFromPath(thisPath) {
           async +
           "(" +
           filteredKeys.join(", ") +
-          ") => {\n  return "+ await +
+          ") => {\n  return " +
+          isAwait +
           NativeObj +
           "." +
           m +
