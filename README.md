@@ -1,10 +1,10 @@
 # react-native-swift-bridge
 
-# New In 2.3
-
-RNSB will build a JS bridging file too! Look for RNSwiftBridge.js in the top of your package. Now you get autocomplete for any code you write to communicate with your package!
-
 Utility for never having to write Objective-C bridging code for your swift app again!
+
+# New In 2.4
+
+RNSB will now build out the JS definitions of your UI Components automatically! Complete with PropTypes, allowing better autocomplete and checking when building out components on top.
 
 # Usage
 
