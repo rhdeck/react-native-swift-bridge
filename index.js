@@ -459,7 +459,7 @@ function getJSFromPath(thisPath) {
       });
       outlines.push("//#endregion");
     }
-    if (obj.view) {
+    if (obj.view && classes[obj.view]) {
       components++;
       const componentName = "Swift" + obj.view;
       const nativeName = "Native" + obj.view;
