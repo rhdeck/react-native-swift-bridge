@@ -25,6 +25,7 @@ if (commander.watch) {
       const text = core.getBridgingModuleTextFromPath(thisPath);
       console.log("Detected change");
       if (core.writeIf(outfile, text)) {
+        core.addModuleToPBXProj(outfile, thisPath);
         console.log("Updated " + outfile);
         if (core.writeIf(jsFile, core.getJSFromPath(thisPath))) {
           console.log("Updated " + jsFile);
