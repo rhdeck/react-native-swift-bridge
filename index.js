@@ -459,7 +459,7 @@ function getJSFromPath(thisPath) {
       });
       outlines.push("//#endregion");
     }
-    if (obj.view && classes[obj.view]) {
+    if (obj.view) {
       components++;
       const componentName = "Swift" + obj.view;
       const nativeName = "Native" + obj.view;
@@ -478,7 +478,7 @@ function getJSFromPath(thisPath) {
       outlines.push("}");
       outlines.push("}");
       outlines.push(componentName + ".propTypes = {");
-      if (classes[obj.view].properties) {
+      if (classes[obj.view] && classes[obj.view].properties) {
         Object.keys(classes[obj.view].properties).forEach(propName => {
           const pobj = classes[obj.view].properties[propName];
 
