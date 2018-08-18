@@ -406,8 +406,10 @@ function addModuleToPBXProj(outfile, iosPath) {
 }
 function getJSFromPath(thisPath) {
   const classes = getClassesFromPath(thisPath);
-  var outlines = ['import { NativeModules } from "react-native"'];
+  var methods = 0;
+  var components = 0;
   var exportables = [];
+  var outlines = [];
   Object.keys(classes).forEach(k => {
     const obj = classes[k];
     const NativeObj = "Native" + k;
@@ -415,6 +417,7 @@ function getJSFromPath(thisPath) {
       outlines.push("//#region Code for object " + k);
       outlines.push("const " + NativeObj + "= NativeModules." + k);
       Object.keys(obj.methods).forEach(m => {
+        methods++;
         const mobj = obj.methods[m];
         const JSm = exportables.indexOf(m) > -1 ? k + m : m;
         const async =
@@ -456,13 +459,78 @@ function getJSFromPath(thisPath) {
       });
       outlines.push("//#endregion");
     }
+    if (obj.view) {
+      components++;
+      const componentName = "Swift" + obj.view;
+      const nativeName = "Native" + obj.view;
+      const requireLine =
+        "const " +
+        nativeName +
+        " = requireNativeComponent('" +
+        obj.view +
+        "'," +
+        componentName +
+        ")";
+      outlines.push(requireLine);
+      outlines.push("class " + componentName + " extends Component {");
+      outlines.push("render() {");
+      outlines.push("return <" + nativeName + " {...props} />");
+      outlines.push("}");
+      outlines.push("}");
+      outlines.push(componentName + ".propTypes = {");
+      if (classes[obj.view].properties) {
+        Object.keys(classes[obj.view].properties).forEach(propName => {
+          const pobj = classes[obj.view].properties[propName];
+
+          outlines.push(
+            propName + ": " + "PropTypes." + getPropTypeFromObject(pobj) + ","
+          );
+        });
+      }
+
+      outlines.push("...ViewPropTypes");
+      outlines.push("}");
+      exportables.push(componentName);
+    }
   });
+  if (methods > 0 && components > 0) {
+    outlines.unshift(
+      'import { NativeModules, requireNativeComponent, ViewPropTypes } from "react-native"'
+    );
+    outlines.unshift('import { Component } from "react"');
+    outlines.unshift('import { PropTypes } from "prop-types"');
+  } else if (components > 0) {
+    outlines.unshift(
+      'import { requireNativeComponentm, ViewPropTypes } from "react-native"'
+    );
+    outlines.unshift('import { Component } from "react"');
+    outlines.unshift('import { PropTypes } from "prop-types"');
+  } else if (methods > 0) {
+    outlines.unshift('import { NativeModules } from "react-native"');
+  }
   outlines.push("//#region Exports");
   outlines.push("export {\n  " + exportables.join(",\n  ") + "\n}");
   outlines.push("//#endregion");
   const out = prettier.format(outlines.join("\n"));
 
   return out;
+}
+function getPropTypeFromObject(pobj) {
+  console.log(pobj);
+  switch (pobj.type) {
+    case "NSString *":
+      return "string";
+    case "BOOL":
+      return "boolean";
+    case "NSInteger":
+    case "float":
+    case "double":
+      return "number";
+    case "NSArray *":
+      return "array";
+    default:
+      return "object";
+  }
 }
 module.exports = {
   getBridgingModuleTextFromPath,
