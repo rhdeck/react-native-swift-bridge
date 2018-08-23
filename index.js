@@ -346,6 +346,8 @@ function getOCType(type) {
       return "BOOL";
     case "URL":
       return "NSURL *";
+    case "Date":
+      return "NSDate *";
     default:
       //Try some new techniques
       if (type.indexOf("[") === 0) {
