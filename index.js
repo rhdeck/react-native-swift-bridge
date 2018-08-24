@@ -54,6 +54,18 @@ function getClassesFromPath(initialPath) {
         case "var":
           if (!p.properties) p.properties = {};
           p.properties[line.info.name] = line.info;
+          break;
+        case "events":
+          if (!p.events) p.events = [];
+          line.info.events.map(e => {
+            if (p.events.indexOf(e) == -1) p.events.push(e);
+          });
+          break;
+        case "constants":
+          if (!p.constants) p.constants = [];
+          line.info.constants.map(e => {
+            if (p.constants.indexOf(e) == -1) p.events.push(e);
+          });
       }
     });
     processedClasses[classname] = p;
@@ -160,11 +172,17 @@ function processFile(filePath) {
   for (var x = 0; x < lines.length; x++) {
     var line = lines[x];
     if (line.match(/^\s*@objc/)) {
-      //if (line.indexOf("@objc") > -1) {
       var obj = { line: x, text: line };
       if (x > 0) obj.before = lines[x - 1];
       if (x < lines.length - 1) obj.after = lines[x + 1];
       var l = processLine(obj);
+      if (l) foundLines.push(l);
+    }
+    if (line.match(/@RNS/)) {
+      var obj = { line: x, text: line };
+      if (x > 0) obj.before = lines[x - 1];
+      if (x < lines.length - 1) obj.after = lines[x + 1];
+      var l = processHint(obj);
       if (l) foundLines.push(l);
     }
   }
@@ -187,6 +205,30 @@ function processFile(filePath) {
     }
   });
   return classes;
+}
+function processHint(v) {
+  var t = v.text.trim();
+  console.log(t);
+  //OK, so what does this tell us?
+  if (t.indexOf("@RNSEvent") > -1) {
+    //OK, so there are events on this line. let's take a look
+    var words = t.split(/[^A-Za-z0-9-_]/).filter(w => {
+      return (
+        w.length > 0 && ["return", "RNSEvent", "RNSEvents"].indexOf(w) == -1
+      );
+    });
+    console.log("Found words", words);
+    return { type: "events", info: { events: words } };
+  }
+  if (t.indexOf("@RNSConstant") > -1) {
+    var words = t.split("^[A-Za-z0-9-_").filter(w => {
+      return (
+        w.length > 0 &&
+        ["return", "RNSConstant", "RNSConstants"].indexOf(w) == -1
+      );
+    });
+    return { type: "constants", info: { constants: words } };
+  }
 }
 function processLine(v) {
   var t = v.text.trim();
@@ -317,9 +359,10 @@ function processLine(v) {
       }
       console.log("I don't know what to do with ", rest);
   }
-  v["type"] = type;
-  v["info"] = info;
-  return v;
+  return {
+    type,
+    info
+  };
 }
 function getOCType(type) {
   type = type.trim();
@@ -412,12 +455,13 @@ function getJSFromPath(thisPath) {
   var components = 0;
   var exportables = [];
   var outlines = [];
+  var events = [];
   Object.keys(classes).forEach(k => {
     const obj = classes[k];
     const NativeObj = "Native" + k;
     if (obj.methods) {
       outlines.push("//#region Code for object " + k);
-      outlines.push("const " + NativeObj + "= NativeModules." + k);
+      outlines.push("const " + NativeObj + " = NativeModules." + k);
       Object.keys(obj.methods).forEach(m => {
         methods++;
         const mobj = obj.methods[m];
@@ -461,6 +505,51 @@ function getJSFromPath(thisPath) {
       });
       outlines.push("//#endregion");
     }
+    if (obj.events) {
+      outlines.push("//#region events for object " + k);
+      const nativeEventEmitterFunction = "get" + NativeObj + "EventEmitter";
+      outlines.push("var _" + nativeEventEmitterFunction + " = null");
+      outlines.push(
+        "const " +
+          nativeEventEmitterFunction +
+          " = () => { if(!_" +
+          nativeEventEmitterFunction +
+          ") " +
+          nativeEventEmitterFunction +
+          "= new NativeEventEmitter(" +
+          NativeObj +
+          "); return _" +
+          nativeEventEmitterFunction +
+          "}"
+      );
+      obj.events.forEach(event => {
+        const methodName = "subscribeTo" + event;
+        outlines.push(
+          "const " +
+            methodName +
+            " = cb=>{ return " +
+            nativeEventEmitterFunction +
+            '().addListener("' +
+            event +
+            '", cb)}'
+        );
+        exportables.push(methodName);
+        events.push({ event, methodName });
+      });
+      outlines.push("//#endregion");
+    }
+    if (obj.constants) {
+      outlines.push("//#region constants for object " + k);
+      constants.forEach(constant => {
+        const constantName = constant;
+        outlines.push(
+          "const " + constantName + " = " + NativeObj + "." + constant
+        );
+        constants.push({ constant, NativeObj });
+        exportables.push(constant);
+      });
+      outlines.push("//#endregion");
+    }
     if (obj.view) {
       components++;
       const componentName = "Swift" + obj.view;
@@ -494,25 +583,40 @@ function getJSFromPath(thisPath) {
       outlines.push("}");
       exportables.push(componentName);
     }
+    if (events.length > 0) {
+      outlines.push("//#region Event marshalling object");
+      outlines.push("const RNSEvents = {");
+      events.forEach(({ event, methodName }) => {
+        outlines.push(event + ": " + methodName);
+        outlines.push(",");
+      });
+      outlines.pop();
+      outlines.push("}");
+      outlines.push("//#endregion");
+      exportables.push("RNSEvents");
+    }
   });
   if (methods > 0 && components > 0) {
     outlines.unshift(
-      'import { NativeModules, requireNativeComponent, ViewPropTypes } from "react-native"'
+      'import { NativeModules, NativeEventEmitter, requireNativeComponent, ViewPropTypes } from "react-native"'
     );
     outlines.unshift('import { Component } from "react"');
     outlines.unshift('import { PropTypes } from "prop-types"');
   } else if (components > 0) {
     outlines.unshift(
-      'import { requireNativeComponentm, ViewPropTypes } from "react-native"'
+      'import { requireNativeComponent,  ViewPropTypes } from "react-native"'
     );
     outlines.unshift('import { Component } from "react"');
     outlines.unshift('import { PropTypes } from "prop-types"');
   } else if (methods > 0) {
-    outlines.unshift('import { NativeModules } from "react-native"');
+    outlines.unshift(
+      'import { NativeModules, NativeEventEmitter } from "react-native"'
+    );
   }
   outlines.push("//#region Exports");
   outlines.push("export {\n  " + exportables.join(",\n  ") + "\n}");
   outlines.push("//#endregion");
+  // const out = outlines.join("\n");
   const out = prettier.format(outlines.join("\n"));
 
   return out;
