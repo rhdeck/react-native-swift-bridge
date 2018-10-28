@@ -391,6 +391,8 @@ function getOCType(type) {
       return "NSURL *";
     case "Date":
       return "NSDate *";
+    case "Any":
+      return "id";
     default:
       //Try some new techniques
       if (type.indexOf("[") === 0) {
@@ -552,7 +554,7 @@ function getJSFromPath(thisPath) {
     }
     if (obj.view) {
       components++;
-      const componentName = "Swift" + obj.view;
+      const componentName = obj.view;
       const nativeName = "Native" + obj.view;
       const requireLine =
         "const " +
