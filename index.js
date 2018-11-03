@@ -11,7 +11,8 @@ function getRootIOSPath(initialPath) {
   return Path.dirname(globs[0]);
 }
 function getBridgingModuleTextFromPath(initialPath) {
-  return getBridgingModuleTextFromClasses(getClassesFromPath(initialPath));
+  const classInfo = getClassesFromPath(initialPath);
+  return getBridgingModuleTextFromClasses(classInfo);
 }
 function getClassesFromPath(initialPath) {
   const newdir = getRootIOSPath(initialPath);
@@ -516,7 +517,7 @@ function getJSFromPath(thisPath) {
           nativeEventEmitterFunction +
           " = () => { if(!_" +
           nativeEventEmitterFunction +
-          ") " +
+          ") _" +
           nativeEventEmitterFunction +
           "= new NativeEventEmitter(" +
           NativeObj +
@@ -567,7 +568,7 @@ function getJSFromPath(thisPath) {
       outlines.push(requireLine);
       outlines.push("class " + componentName + " extends Component {");
       outlines.push("render() {");
-      outlines.push("return <" + nativeName + " {...props} />");
+      outlines.push("return <" + nativeName + " {...this.props} />");
       outlines.push("}");
       outlines.push("}");
       outlines.push(componentName + ".propTypes = {");
@@ -585,30 +586,30 @@ function getJSFromPath(thisPath) {
       outlines.push("}");
       exportables.push(componentName);
     }
-    if (events.length > 0) {
-      outlines.push("//#region Event marshalling object");
-      outlines.push("const RNSEvents = {");
-      events.forEach(({ event, methodName }) => {
-        outlines.push(event + ": " + methodName);
-        outlines.push(",");
-      });
-      outlines.pop();
-      outlines.push("}");
-      outlines.push("//#endregion");
-      exportables.push("RNSEvents");
-    }
   });
+  if (events.length > 0) {
+    outlines.push("//#region Event marshalling object");
+    outlines.push("const RNSEvents = {");
+    events.forEach(({ event, methodName }) => {
+      outlines.push(event + ": " + methodName);
+      outlines.push(",");
+    });
+    outlines.pop();
+    outlines.push("}");
+    outlines.push("//#endregion");
+    exportables.push("RNSEvents");
+  }
   if (methods > 0 && components > 0) {
     outlines.unshift(
       'import { NativeModules, NativeEventEmitter, requireNativeComponent, ViewPropTypes } from "react-native"'
     );
-    outlines.unshift('import { Component } from "react"');
+    outlines.unshift('import React, { Component } from "react"');
     outlines.unshift('import { PropTypes } from "prop-types"');
   } else if (components > 0) {
     outlines.unshift(
       'import { requireNativeComponent,  ViewPropTypes } from "react-native"'
     );
-    outlines.unshift('import { Component } from "react"');
+    outlines.unshift('import React, { Component } from "react"');
     outlines.unshift('import { PropTypes } from "prop-types"');
   } else if (methods > 0) {
     outlines.unshift(
@@ -629,7 +630,7 @@ function getPropTypeFromObject(pobj) {
     case "NSString *":
       return "string";
     case "BOOL":
-      return "boolean";
+      return "bool";
     case "NSInteger":
     case "float":
     case "double":
