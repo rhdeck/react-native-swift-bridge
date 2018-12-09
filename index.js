@@ -65,7 +65,7 @@ function getClassesFromPath(initialPath) {
         case "constants":
           if (!p.constants) p.constants = [];
           line.info.constants.map(e => {
-            if (p.constants.indexOf(e) == -1) p.events.push(e);
+            if (p.constants.indexOf(e) == -1) p.constants.push(e);
           });
       }
     });
@@ -191,6 +191,7 @@ function processFile(filePath) {
   var classes = {};
   var thisClass;
   foundLines.forEach(obj => {
+    console.log("This is a class and its object is ", obj);
     if (obj.type == "class") {
       var name = obj.info.name;
       if (obj.objcname) {
@@ -209,7 +210,6 @@ function processFile(filePath) {
 }
 function processHint(v) {
   var t = v.text.trim();
-  console.log(t);
   //OK, so what does this tell us?
   if (t.indexOf("@RNSEvent") > -1) {
     //OK, so there are events on this line. let's take a look
@@ -218,11 +218,10 @@ function processHint(v) {
         w.length > 0 && ["return", "RNSEvent", "RNSEvents"].indexOf(w) == -1
       );
     });
-    console.log("Found words", words);
     return { type: "events", info: { events: words } };
   }
   if (t.indexOf("@RNSConstant") > -1) {
-    var words = t.split("^[A-Za-z0-9-_").filter(w => {
+    var words = t.split(/[^A-Za-z0-9-_]/).filter(w => {
       return (
         w.length > 0 &&
         ["return", "RNSConstant", "RNSConstants"].indexOf(w) == -1
@@ -305,6 +304,7 @@ function processLine(v) {
       } else {
         info = { name: rest.trim() };
       }
+      if (v.objcname) info.name = v.objcname;
       break;
     case "func":
       const name = rest.substr(0, rest.indexOf("(")).trim();
@@ -459,6 +459,7 @@ function getJSFromPath(thisPath) {
   var exportables = [];
   var outlines = [];
   var events = [];
+  var constants = [];
   Object.keys(classes).forEach(k => {
     const obj = classes[k];
     const NativeObj = "Native" + k;
@@ -543,7 +544,7 @@ function getJSFromPath(thisPath) {
     }
     if (obj.constants) {
       outlines.push("//#region constants for object " + k);
-      constants.forEach(constant => {
+      obj.constants.forEach(constant => {
         const constantName = constant;
         outlines.push(
           "const " + constantName + " = " + NativeObj + "." + constant
@@ -599,7 +600,7 @@ function getJSFromPath(thisPath) {
     outlines.push("//#endregion");
     exportables.push("RNSEvents");
   }
-  if (methods > 0 && components > 0) {
+  if (methods > 0) {
     outlines.unshift(
       'import { NativeModules, NativeEventEmitter, requireNativeComponent, ViewPropTypes } from "react-native"'
     );
@@ -625,7 +626,6 @@ function getJSFromPath(thisPath) {
   return out;
 }
 function getPropTypeFromObject(pobj) {
-  console.log(pobj);
   switch (pobj.type) {
     case "NSString *":
       return "string";
