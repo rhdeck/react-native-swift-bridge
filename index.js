@@ -1,7 +1,7 @@
 const fs = require("fs");
 const Path = require("path");
 const glob = require("glob");
-const xcode = require("xcode");
+const xcode = require("@raydeck/xcode");
 const prettier = require("prettier");
 function getRootIOSPath(initialPath) {
   if (!initialPath) initialPath = process.cwd();
